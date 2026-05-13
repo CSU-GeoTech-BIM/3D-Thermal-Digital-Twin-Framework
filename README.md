@@ -181,5 +181,3 @@ Suggested statement template:
 
 > The data and scripts required to reproduce the permafrost thermal interpolation and model construction workflow are available in this repository.  
 > Python scripts for Universal Kriging with Bayesian optimization are provided under `Scripts/`, and Grasshopper definitions for temperature field visualization and permafrost model construction are provided under `Grasshopper/`.
-
-If needed, add your DOI/release link after archiving this repository (for example, Zenodo + GitHub release).
