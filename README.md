@@ -63,7 +63,7 @@ flowchart LR
   D --> E[3D thermal field & frozen-zone visualization]
   C --> F[mesh model construct.gh]
   F --> G[Watertight frozen-zone meshes]
-  G --> H[Downstream simulation e.g. FLAC3D / Griddle]
+  G --> H[Mesh export e.g. Griddle → simulation e.g. FLAC3D]
 ```
 
 ---
@@ -81,7 +81,7 @@ flowchart LR
 ### Rhino / Grasshopper (Part B)
 
 - **Rhino 7 or 8** with **Grasshopper**
-- Optional plugins depending on your export path (e.g., tools for mesh export to numerical engines such as **Griddle** or **FLAC3D**)
+- Optional plugins depending on your export path—for example, **Griddle** (Itasca mesh-generation plugin for building FLAC3D-compatible volumetric meshes) and **FLAC3D** (numerical simulation software for geomechanical / thermal analysis)
 
 ---
 
@@ -139,7 +139,7 @@ The script iterates over user-defined target elevations and variogram models, an
 | `heights` | Target elevation sequence | `np.arange(440.0, 482.2, 0.2)` |
 | `models` | Variogram models to evaluate | `["gaussian"]`, `["exponential"]`, `["spherical"]`, … |
 | `n_calls` | Total Bayesian optimization iterations | `350` |
-| `n_initial_points` | Random initial evaluations before GP-guided search | `200` |
+| `n_initial_points` | Random-space initial samples in Bayesian optimization (before GP surrogate guides search); **not** a genetic algorithm | `200` |
 | `data_percentage` | Fraction of samples used per elevation | `1.0` |
 
 **Example — point `main.py` to the bundled data:**
@@ -165,6 +165,18 @@ path = Path(__file__).resolve().parent.parent / "Data" / "temperature.xlsx"
    | Anisotropy angle (°) | 0.0 – 180.0 |
 
 4. **Objective function:** minimize **RSS** (Residual Sum of Squares) from LOO predictions.
+
+**Optimization method (`gp_minimize` — Bayesian optimization, not genetic algorithm):**
+
+This repository uses `scikit-optimize.gp_minimize`, which is **Bayesian optimization** based on a **Gaussian Process (GP)** surrogate model—not a genetic algorithm (GA), particle swarm, or differential evolution.
+
+| Stage | What happens |
+|-------|----------------|
+| Initial phase (`n_initial_points`) | Parameter sets are sampled **at random** within the bounds (exploration of the search space). |
+| Subsequent iterations | A GP approximates RSS vs. parameters; an **acquisition function** (default: Expected Improvement) selects the next candidate to evaluate. |
+| Total budget (`n_calls`) | Includes both random initial points and GP-guided evaluations. |
+
+So `n_initial_points = 200` means the first 200 of the 350 total evaluations use random sampling; the remaining 150 are guided by the GP model. This is standard practice in Bayesian optimization to build an initial surrogate before exploitation.
 
 **Per-elevation processing (`data_loader.py`):**
 
@@ -231,7 +243,7 @@ The `Grasshopper/` directory contains two parametric workflows that bridge spati
 
 **Expected outputs:**
 
-- Closed frozen-zone volume meshes ready for export to numerical engines (e.g., via **Griddle** or **FLAC3D**).
+- Closed frozen-zone volume meshes ready for meshing and simulation—for example, generate FLAC3D-compatible grids with the **Griddle** plugin, then run analyses in **FLAC3D**.
 
 ---
 
@@ -255,7 +267,7 @@ The `Grasshopper/` directory contains two parametric workflows that bridge spati
    Open `Grasshopper/mesh model construct.gh` to reconstruct watertight meshes for frozen regions.
 
 5. **Export for simulation**  
-   Export final 3D meshes to your preferred numerical platform (e.g., Griddle, FLAC3D, or other FDM/thermal solvers).
+   Export watertight meshes from Grasshopper; use **Griddle** (mesh generation) to build simulation grids where needed, then import into numerical solvers such as **FLAC3D** or other FDM/thermal engines.
 
 ---
 
